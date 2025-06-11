@@ -1,0 +1,31 @@
+{
+    "experimental_settings": {
+        "target_color": {
+            "red": 128,
+            "green": 0,
+            "blue": 128,
+            "description": "Standard purple color"
+        },
+        "detection": {
+            "tolerance_percentage": 60,
+            "scan_interval_ms": 1,
+            "minimum_pixels_required": 1
+        },
+        "performance": {
+            "click_cooldown_ms": 50,
+            "cpu_optimization": true,
+            "background_execution": true
+        },
+        "monitoring": {
+            "pixel_grid_size": "3x3",
+            "center_offset_pixels": 0,
+            "log_detections": true
+        }
+    },
+    "controls": {
+        "toggle_key": "E",
+        "exit_key": "Q",
+        "description": "E to enable/disable, Q to quit"
+    }
+}
+

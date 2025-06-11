@@ -1,0 +1,5 @@
+# GUI Application Requirements
+numpy>=1.19.0
+pyinstaller>=4.0
+pillow>=8.0.0
+
