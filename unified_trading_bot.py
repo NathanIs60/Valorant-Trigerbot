@@ -4,16 +4,219 @@ import threading
 import time
 import json
 import os
-from ctypes import windll, wintypes, byref, c_int32, c_uint32, Structure
+from ctypes import windll, wintypes, byref, c_int32, c_uint32, Structure, POINTER
 import math
 from collections import deque
 import datetime
+import random
 
 # Windows API setup
 user32 = windll.user32
 gdi32 = windll.gdi32
 kernel32 = windll.kernel32
 user32.SetProcessDPIAware()
+
+# Advanced Windows API structures for hardware simulation
+class POINT(Structure):
+    _fields_ = [("x", c_int32), ("y", c_int32)]
+
+class MOUSEINPUT(Structure):
+    _fields_ = [("dx", c_int32),
+                ("dy", c_int32),
+                ("mouseData", c_uint32),
+                ("dwFlags", c_uint32),
+                ("time", c_uint32),
+                ("dwExtraInfo", POINTER(c_uint32))]
+
+class INPUT(Structure):
+    class _INPUT(Structure):
+        _fields_ = [("mi", MOUSEINPUT)]
+    
+    _anonymous_ = ("_input",)
+    _fields_ = [("type", c_uint32),
+                ("_input", _INPUT)]
+
+class HardwareClickSimulator:
+    """Advanced hardware-level click simulation"""
+    
+    def __init__(self):
+        self.user32 = windll.user32
+        self.kernel32 = windll.kernel32
+        
+        # Hardware timing parameters (microseconds)
+        self.HARDWARE_CLICK_DOWN_TIME = random.uniform(8000, 15000)  # 8-15ms
+        self.HARDWARE_CLICK_UP_TIME = random.uniform(1000, 3000)     # 1-3ms
+        self.HARDWARE_JITTER = random.uniform(500, 2000)             # 0.5-2ms
+        
+        # Mouse hardware constants
+        self.INPUT_MOUSE = 0
+        self.MOUSEEVENTF_LEFTDOWN = 0x0002
+        self.MOUSEEVENTF_LEFTUP = 0x0004
+        self.MOUSEEVENTF_MOVE = 0x0001
+        self.MOUSEEVENTF_ABSOLUTE = 0x8000
+        
+    def simulate_hardware_click(self, method="advanced"):
+        """Simulate hardware-level mouse click"""
+        try:
+            if method == "advanced":
+                return self._advanced_hardware_click()
+            elif method == "raw_input":
+                return self._raw_input_click()
+            elif method == "direct_injection":
+                return self._direct_injection_click()
+            elif method == "timing_simulation":
+                return self._timing_simulation_click()
+            else:
+                return self._standard_click()
+        except Exception as e:
+            print(f"Hardware click error: {e}")
+            return False
+    
+    def _advanced_hardware_click(self):
+        """Advanced hardware simulation with micro-movements"""
+        try:
+            # Get current cursor position
+            cursor_pos = POINT()
+            self.user32.GetCursorPos(byref(cursor_pos))
+            
+            # Add micro-movement (hardware mice have slight imprecision)
+            micro_x = random.uniform(-0.5, 0.5)
+            micro_y = random.uniform(-0.5, 0.5)
+            
+            new_x = int(cursor_pos.x + micro_x)
+            new_y = int(cursor_pos.y + micro_y)
+            
+            # Simulate hardware timing variations
+            pre_click_delay = random.uniform(0.001, 0.005)  # Human reaction time
+            time.sleep(pre_click_delay)
+            
+            # Move with hardware-like precision
+            self.user32.SetCursorPos(new_x, new_y)
+            time.sleep(random.uniform(0.0005, 0.002))  # Hardware settling time
+            
+            # Hardware-style click with variable timing
+            click_down_time = random.uniform(0.008, 0.015)  # 8-15ms
+            click_up_delay = random.uniform(0.001, 0.003)   # 1-3ms
+            
+            # Mouse down
+            self.user32.mouse_event(self.MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
+            time.sleep(click_down_time)
+            
+            # Mouse up
+            self.user32.mouse_event(self.MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
+            time.sleep(click_up_delay)
+            
+            return True
+            
+        except Exception as e:
+            print(f"Advanced hardware click error: {e}")
+            return False
+    
+    def _raw_input_click(self):
+        """Raw input simulation"""
+        try:
+            # Simulate raw input device
+            inputs = INPUT()
+            inputs.type = self.INPUT_MOUSE
+            
+            # Mouse down
+            inputs._input.mi.dx = 0
+            inputs._input.mi.dy = 0
+            inputs._input.mi.mouseData = 0
+            inputs._input.mi.dwFlags = self.MOUSEEVENTF_LEFTDOWN
+            inputs._input.mi.time = 0
+            inputs._input.mi.dwExtraInfo = None
+            
+            self.user32.SendInput(1, byref(inputs), 28)
+            
+            # Hardware timing
+            time.sleep(random.uniform(0.008, 0.015))
+            
+            # Mouse up
+            inputs._input.mi.dwFlags = self.MOUSEEVENTF_LEFTUP
+            self.user32.SendInput(1, byref(inputs), 28)
+            
+            return True
+            
+        except Exception as e:
+            print(f"Raw input click error: {e}")
+            return False
+    
+    def _direct_injection_click(self):
+        """Direct message injection"""
+        try:
+            hwnd = self.user32.GetForegroundWindow()
+            if not hwnd:
+                return False
+            
+            # Get window coordinates
+            rect = wintypes.RECT()
+            self.user32.GetWindowRect(hwnd, byref(rect))
+            
+            # Calculate relative position
+            cursor_pos = POINT()
+            self.user32.GetCursorPos(byref(cursor_pos))
+            
+            rel_x = cursor_pos.x - rect.left
+            rel_y = cursor_pos.y - rect.top
+            lparam = (rel_y << 16) | rel_x
+            
+            # Hardware-style timing
+            pre_delay = random.uniform(0.001, 0.003)
+            time.sleep(pre_delay)
+            
+            # Send messages with hardware timing
+            self.user32.SendMessageW(hwnd, 0x0201, 0x0001, lparam)  # WM_LBUTTONDOWN
+            time.sleep(random.uniform(0.008, 0.015))
+            self.user32.SendMessageW(hwnd, 0x0202, 0x0000, lparam)  # WM_LBUTTONUP
+            
+            return True
+            
+        except Exception as e:
+            print(f"Direct injection click error: {e}")
+            return False
+    
+    def _timing_simulation_click(self):
+        """Precise timing simulation"""
+        try:
+            # Simulate electrical signal timing
+            signal_propagation_delay = random.uniform(0.0001, 0.0005)  # 0.1-0.5ms
+            time.sleep(signal_propagation_delay)
+            
+            # Simulate switch bounce (hardware mice have this)
+            bounce_iterations = random.randint(1, 3)
+            
+            for i in range(bounce_iterations):
+                # Mouse down with bounce
+                self.user32.mouse_event(self.MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
+                if i < bounce_iterations - 1:
+                    time.sleep(random.uniform(0.0001, 0.0003))  # Bounce delay
+            
+            # Hold time (mechanical switch characteristic)
+            hold_time = random.uniform(0.008, 0.015)
+            time.sleep(hold_time)
+            
+            # Mouse up with bounce
+            for i in range(bounce_iterations):
+                self.user32.mouse_event(self.MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
+                if i < bounce_iterations - 1:
+                    time.sleep(random.uniform(0.0001, 0.0003))
+            
+            return True
+            
+        except Exception as e:
+            print(f"Timing simulation click error: {e}")
+            return False
+    
+    def _standard_click(self):
+        """Standard click as fallback"""
+        try:
+            self.user32.mouse_event(self.MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
+            time.sleep(0.001)
+            self.user32.mouse_event(self.MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
+            return True
+        except:
+            return False
 
 class TradingBot:
     """Base class for all trading bots"""
@@ -146,9 +349,12 @@ class MultiColorBot(TradingBot):
 class UnifiedTradingBotApp:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Unified Trading Bot Manager")
-        self.root.geometry("700x800")
+        self.root.title("Unified Trading Bot Manager - Hardware Click Edition")
+        self.root.geometry("700x850")
         self.root.resizable(False, False)
+        
+        # Initialize hardware click simulator
+        self.hardware_clicker = HardwareClickSimulator()
         
         # Initialize bots
         self.bots = {
@@ -186,6 +392,7 @@ class UnifiedTradingBotApp:
         # Configuration
         self.scan_interval = tk.DoubleVar(value=50.0)  # 50ms
         self.action_cooldown = tk.DoubleVar(value=200.0)  # 200ms
+        self.click_method = tk.StringVar(value="advanced")  # Hardware click method
         
         # Device context
         self.hdc = None
@@ -200,8 +407,8 @@ class UnifiedTradingBotApp:
         main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         
         # Title
-        title_label = ttk.Label(main_frame, text="Unified Trading Bot Manager", 
-                               font=("Arial", 18, "bold"), foreground="blue")
+        title_label = ttk.Label(main_frame, text="Unified Trading Bot Manager - Hardware Click Edition", 
+                               font=("Arial", 16, "bold"), foreground="blue")
         title_label.grid(row=0, column=0, columnspan=2, pady=(0, 20))
         
         # Bot Selection Section
@@ -210,17 +417,20 @@ class UnifiedTradingBotApp:
         # Status Section
         self.setup_status_section(main_frame, row=2)
         
+        # Hardware Click Section
+        self.setup_hardware_click_section(main_frame, row=3)
+        
         # Parameters Section
-        self.setup_parameters_section(main_frame, row=3)
+        self.setup_parameters_section(main_frame, row=4)
         
         # Control Section
-        self.setup_control_section(main_frame, row=4)
+        self.setup_control_section(main_frame, row=5)
         
         # Statistics Section
-        self.setup_statistics_section(main_frame, row=5)
+        self.setup_statistics_section(main_frame, row=6)
         
         # Log Section
-        self.setup_log_section(main_frame, row=6)
+        self.setup_log_section(main_frame, row=7)
         
     def setup_bot_selection_section(self, parent, row):
         """Setup bot selection interface"""
@@ -249,6 +459,42 @@ class UnifiedTradingBotApp:
             btn = ttk.Button(button_frame, text=bot.name.split()[0], 
                            command=lambda k=key: self.quick_select_bot(k), width=12)
             btn.grid(row=0, column=i, padx=(0, 5))
+    
+    def setup_hardware_click_section(self, parent, row):
+        """Setup hardware click method selection"""
+        hardware_frame = ttk.LabelFrame(parent, text="🔧 Hardware Click Simulation", padding="10")
+        hardware_frame.grid(row=row, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(0, 10))
+        
+        # Method selection
+        ttk.Label(hardware_frame, text="Click Method:").grid(row=0, column=0, sticky=tk.W)
+        
+        method_combo = ttk.Combobox(hardware_frame, textvariable=self.click_method, 
+                                   values=["advanced", "raw_input", "direct_injection", "timing_simulation", "standard"], 
+                                   state="readonly", width=20)
+        method_combo.grid(row=0, column=1, padx=(10, 0), sticky=tk.W)
+        
+        # Test hardware click button
+        ttk.Button(hardware_frame, text="Test Hardware Click", 
+                  command=self.test_hardware_click).grid(row=0, column=2, padx=(10, 0))
+        
+        # Method descriptions
+        method_descriptions = {
+            "advanced": "🚀 Advanced: Micro-movements + variable timing",
+            "raw_input": "⚡ Raw Input: Direct input device simulation",
+            "direct_injection": "🎯 Direct: Message injection to window",
+            "timing_simulation": "⏱️ Timing: Electrical signal simulation",
+            "standard": "📱 Standard: Basic click (fallback)"
+        }
+        
+        self.method_description = ttk.Label(hardware_frame, 
+                                           text=method_descriptions.get(self.click_method.get(), ""),
+                                           foreground="green")
+        self.method_description.grid(row=1, column=0, columnspan=3, sticky=tk.W, pady=(5, 0))
+        
+        # Update description when method changes
+        method_combo.bind('<<ComboboxSelected>>', 
+                         lambda e: self.method_description.configure(
+                             text=method_descriptions.get(self.click_method.get(), "")))
         
     def setup_status_section(self, parent, row):
         """Setup status display"""
@@ -335,7 +581,8 @@ class UnifiedTradingBotApp:
             'actions': ttk.Label(stats_frame, text="Actions: 0"),
             'errors': ttk.Label(stats_frame, text="Errors: 0"),
             'success_rate': ttk.Label(stats_frame, text="Success Rate: 0%"),
-            'avg_response': ttk.Label(stats_frame, text="Avg Response: 0ms")
+            'avg_response': ttk.Label(stats_frame, text="Avg Response: 0ms"),
+            'click_method': ttk.Label(stats_frame, text="Click Method: Hardware", foreground="green")
         }
         
         row_idx = 0
@@ -368,6 +615,23 @@ class UnifiedTradingBotApp:
         self.root.grid_rowconfigure(0, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
         parent.grid_rowconfigure(row, weight=1)
+    
+    def test_hardware_click(self):
+        """Test the selected hardware click method"""
+        method = self.click_method.get()
+        self.log(f"Testing hardware click method: {method}")
+        
+        try:
+            success = self.hardware_clicker.simulate_hardware_click(method)
+            if success:
+                self.log(f"✓ Hardware click test successful ({method})")
+                messagebox.showinfo("Test Success", f"Hardware click method '{method}' working correctly!")
+            else:
+                self.log(f"✗ Hardware click test failed ({method})")
+                messagebox.showwarning("Test Failed", f"Hardware click method '{method}' failed!")
+        except Exception as e:
+            self.log(f"✗ Hardware click test error: {e}")
+            messagebox.showerror("Test Error", f"Error testing hardware click: {e}")
         
     def on_bot_selected(self, event=None):
         """Handle bot selection from dropdown"""
@@ -423,7 +687,7 @@ class UnifiedTradingBotApp:
             self.detection_thread = threading.Thread(target=self.detection_loop, daemon=True)
             self.detection_thread.start()
             
-            self.log(f"Started {self.current_bot.name}")
+            self.log(f"Started {self.current_bot.name} with hardware click method: {self.click_method.get()}")
             
         except Exception as e:
             self.log(f"Error starting bot: {e}")
@@ -476,9 +740,9 @@ class UnifiedTradingBotApp:
                     # Execute action if cooldown passed
                     current_time = time.time()
                     if current_time - last_action_time >= (self.action_cooldown.get() / 1000.0):
-                        self.execute_trading_action()
-                        last_action_time = current_time
-                        self.current_bot.stats['actions'] += 1
+                        if self.execute_hardware_trading_action():
+                            last_action_time = current_time
+                            self.current_bot.stats['actions'] += 1
                 
                 # Sleep
                 time.sleep(self.scan_interval.get() / 1000.0)
@@ -521,17 +785,22 @@ class UnifiedTradingBotApp:
         except:
             return None
     
-    def execute_trading_action(self):
-        """Execute trading action (click)"""
+    def execute_hardware_trading_action(self):
+        """Execute hardware-simulated trading action"""
         try:
-            user32.mouse_event(0x0002, 0, 0, 0, 0)  # MOUSEEVENTF_LEFTDOWN
-            time.sleep(0.001)
-            user32.mouse_event(0x0004, 0, 0, 0, 0)  # MOUSEEVENTF_LEFTUP
+            method = self.click_method.get()
+            success = self.hardware_clicker.simulate_hardware_click(method)
             
-            self.log(f"Trading action executed by {self.current_bot.name}")
+            if success:
+                self.log(f"Hardware trading action executed by {self.current_bot.name} (method: {method})")
+                return True
+            else:
+                self.log(f"Hardware action failed for {self.current_bot.name}")
+                return False
             
         except Exception as e:
-            self.log(f"Action execution error: {e}")
+            self.log(f"Hardware action execution error: {e}")
+            return False
     
     def update_display(self):
         """Update statistics display"""
@@ -549,6 +818,7 @@ class UnifiedTradingBotApp:
             self.stats_labels['errors'].configure(text=f"Errors: {bot.stats['errors']}")
             self.stats_labels['success_rate'].configure(text=f"Success Rate: {success_rate:.1f}%")
             self.stats_labels['avg_response'].configure(text=f"Avg Response: {self.scan_interval.get():.0f}ms")
+            self.stats_labels['click_method'].configure(text=f"Click Method: {self.click_method.get()}")
         
         # Schedule next update
         self.root.after(500, self.update_display)
@@ -586,7 +856,8 @@ class UnifiedTradingBotApp:
         config = {
             'scan_interval': self.scan_interval.get(),
             'action_cooldown': self.action_cooldown.get(),
-            'current_bot': self.bot_var.get() if self.current_bot else None
+            'current_bot': self.bot_var.get() if self.current_bot else None,
+            'click_method': self.click_method.get()
         }
         
         try:
@@ -607,6 +878,7 @@ class UnifiedTradingBotApp:
                 
                 self.scan_interval.set(config.get('scan_interval', 50.0))
                 self.action_cooldown.set(config.get('action_cooldown', 200.0))
+                self.click_method.set(config.get('click_method', 'advanced'))
                 
                 if config.get('current_bot'):
                     self.bot_var.set(config['current_bot'])
@@ -627,8 +899,8 @@ class UnifiedTradingBotApp:
     def run(self):
         """Start the application"""
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
-        self.log("Unified Trading Bot Manager started")
-        self.log("Select a trading bot and configure parameters to begin")
+        self.log("Unified Trading Bot Manager started with Hardware Click Simulation")
+        self.log("Select a trading bot and configure hardware click method to begin")
         self.root.mainloop()
 
 if __name__ == "__main__":
